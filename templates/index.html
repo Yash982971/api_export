@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Find International Buyers</h1>
+    <p class="subtitle">Automated discovery using SearXNG Meta-Search, Singing Bowl Relevance Filtering, and 24/7 Cloud Background Worker.</p>
+</div>
+
+<!-- 24/7 Cloud Worker Control Panel Banner -->
+<div class="card card-primary" style="margin-bottom: 2rem; border-left: 5px solid #2563eb;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <h2>🤖 24/7 Cloud Worker Control Panel</h2>
+            <p class="card-desc">The background search worker runs 24/7 independently of your local PC status.</p>
+        </div>
+        <div>
+            {% if worker_status.status == 'RUNNING_SEARCH' %}
+                <span class="badge badge-warning" style="font-size: 1rem; padding: 8px 16px;">🔄 SEARCHING ({{ worker_status.current_state }})</span>
+            {% elif worker_status.status == 'ERROR' %}
+                <span class="badge badge-danger" style="font-size: 1rem; padding: 8px 16px;">❌ ERROR</span>
+            {% else %}
+                <span class="badge badge-success" style="font-size: 1rem; padding: 8px 16px;">🟢 ACTIVE / IDLE</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+        <div>
+            <strong style="color: #94a3b8; font-size: 0.85rem; display: block;">LAST SEARCH EXECUTED</strong>
+            <span style="font-size: 1.05rem; color: #f8fafc;">{{ worker_status.last_search_time }}</span>
+        </div>
+        <div>
+            <strong style="color: #94a3b8; font-size: 0.85rem; display: block;">NEXT SCHEDULED SEARCH</strong>
+            <span style="font-size: 1.05rem; color: #38bdf8;">{{ worker_status.next_search_time }}</span>
+        </div>
+        <div>
+            <strong style="color: #94a3b8; font-size: 0.85rem; display: block;">LAST RUN BUYERS ADDED</strong>
+            <span style="font-size: 1.1rem; color: #4ade80;">+{{ worker_status.last_buyers_added }}</span>
+        </div>
+        <div>
+            <strong style="color: #94a3b8; font-size: 0.85rem; display: block;">TOTAL VALID BUYERS</strong>
+            <span style="font-size: 1.1rem; color: #facc15;">{{ worker_status.total_valid_buyers }}</span>
+        </div>
+    </div>
+
+    {% if worker_status.error_message %}
+    <div style="margin-top: 10px; padding: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; color: #fca5a5;">
+        ⚠️ <strong>Recent Worker Exception:</strong> {{ worker_status.error_message }}
+    </div>
+    {% endif %}
+
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+        <form action="/api/worker/trigger" method="POST" style="display: inline-flex; align-items: center; gap: 10px;">
+            <input type="hidden" name="state" value="California">
+            <input type="hidden" name="limit" value="10">
+            <button type="submit" class="btn btn-submit" style="padding: 8px 16px;">
+                <span>⚡ Trigger Immediate Cloud Search</span>
+            </button>
+        </form>
+
+        <form action="/api/worker/config" method="POST" style="display: inline-flex; align-items: center; gap: 10px;">
+            <label for="interval_hours" style="font-size: 0.9rem; color: #cbd5e1;">Search Interval:</label>
+            <select name="interval_hours" id="interval_hours" onchange="this.form.submit()" style="padding: 6px 12px; border-radius: 6px;">
+                <option value="1" {% if worker_status.interval_hours == 1 %}selected{% endif %}>Every 1 Hour</option>
+                <option value="3" {% if worker_status.interval_hours == 3 %}selected{% endif %}>Every 3 Hours</option>
+                <option value="6" {% if worker_status.interval_hours == 6 %}selected{% endif %}>Every 6 Hours (Default)</option>
+                <option value="12" {% if worker_status.interval_hours == 12 %}selected{% endif %}>Every 12 Hours</option>
+                <option value="24" {% if worker_status.interval_hours == 24 %}selected{% endif %}>Every 24 Hours</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Search Form Card -->
+    <div class="card card-primary">
+        <h2>🔍 Manual Buyer Discovery Search</h2>
+        <form action="{{ url_for('discover') }}" method="POST" class="search-form">
+            <div class="form-group">
+                <label for="keyword">Product / Keyword:</label>
+                <input type="text" id="keyword" name="keyword" placeholder="e.g. Singing Bowls" value="Singing Bowls" required>
+            </div>
+
+            <div class="form-group">
+                <label for="country">Country:</label>
+                <select id="country" name="country" required>
+                    <option value="USA" selected>USA</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="state">State:</label>
+                <select id="state" name="state" required>
+                    <option value="Alabama">Alabama</option>
+                    <option value="Alaska">Alaska</option>
+                    <option value="Arizona">Arizona</option>
+                    <option value="Arkansas">Arkansas</option>
+                    <option value="California" selected>California</option>
+                    <option value="Colorado">Colorado</option>
+                    <option value="Connecticut">Connecticut</option>
+                    <option value="Delaware">Delaware</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Hawaii">Hawaii</option>
+                    <option value="Idaho">Idaho</option>
+                    <option value="Illinois">Illinois</option>
+                    <option value="Indiana">Indiana</option>
+                    <option value="Iowa">Iowa</option>
+                    <option value="Kansas">Kansas</option>
+                    <option value="Kentucky">Kentucky</option>
+                    <option value="Louisiana">Louisiana</option>
+                    <option value="Maine">Maine</option>
+                    <option value="Maryland">Maryland</option>
+                    <option value="Massachusetts">Massachusetts</option>
+                    <option value="Michigan">Michigan</option>
+                    <option value="Minnesota">Minnesota</option>
+                    <option value="Mississippi">Mississippi</option>
+                    <option value="Missouri">Missouri</option>
+                    <option value="Montana">Montana</option>
+                    <option value="Nebraska">Nebraska</option>
+                    <option value="Nevada">Nevada</option>
+                    <option value="New Hampshire">New Hampshire</option>
+                    <option value="New Jersey">New Jersey</option>
+                    <option value="New Mexico">New Mexico</option>
+                    <option value="New York">New York</option>
+                    <option value="North Carolina">North Carolina</option>
+                    <option value="North Dakota">North Dakota</option>
+                    <option value="Ohio">Ohio</option>
+                    <option value="Oklahoma">Oklahoma</option>
+                    <option value="Oregon">Oregon</option>
+                    <option value="Pennsylvania">Pennsylvania</option>
+                    <option value="Rhode Island">Rhode Island</option>
+                    <option value="South Carolina">South Carolina</option>
+                    <option value="South Dakota">South Dakota</option>
+                    <option value="Tennessee">Tennessee</option>
+                    <option value="Texas">Texas</option>
+                    <option value="Utah">Utah</option>
+                    <option value="Vermont">Vermont</option>
+                    <option value="Virginia">Virginia</option>
+                    <option value="Washington">Washington</option>
+                    <option value="West Virginia">West Virginia</option>
+                    <option value="Wisconsin">Wisconsin</option>
+                    <option value="Wyoming">Wyoming</option>
+                    <option value="Washington, DC">Washington, DC</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="limit">Number of Results:</label>
+                <input type="number" id="limit" name="limit" min="1" max="50" value="20">
+            </div>
+
+            <button type="submit" class="btn btn-submit">
+                <span>⚡ Search & Collect Buyers</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Integration & API Status Card -->
+    <div class="card">
+        <h2>⚙️ API & Credentials Status</h2>
+        <p class="card-desc">The application reads credentials securely from environment variables / <code>.env</code> file.</p>
+
+        <ul class="status-list">
+            <li class="status-item">
+                <span>1. SearXNG Engine (Local/Meta):</span>
+                {% if api_status.searxng %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-warning">Fallback Search Active</span>
+                {% endif %}
+            </li>
+
+            <li class="status-item">
+                <span>2. Gemini AI API (Classification):</span>
+                {% if api_status.gemini %}
+                    <span class="badge badge-success">Configured</span>
+                {% else %}
+                    <span class="badge badge-warning">Rule Fallback Active</span>
+                {% endif %}
+            </li>
+
+            <li class="status-item">
+                <span>3. Gmail SMTP (Outreach):</span>
+                {% if api_status.gmail %}
+                    <span class="badge badge-success">Configured</span>
+                {% else %}
+                    <span class="badge badge-danger">Not Configured</span>
+                {% endif %}
+            </li>
+        </ul>
+
+        <div class="info-box">
+            <h4>💡 How 24/7 Cloud Worker operates:</h4>
+            <ol>
+                <li>Rotates target US states automatically on schedule.</li>
+                <li>Executes SearXNG queries with <strong>Singing Bowl B2B relevance filter</strong>.</li>
+                <li>Crawls company websites for validated email contacts.</li>
+                <li>Stores buyers in persistent DB and syncs Google Sheet tab <code>Yash Manglani</code>.</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<!-- Search Execution History Table -->
+{% if history %}
+<div class="card" style="margin-top: 2rem;">
+    <h2>📋 Recent Automated Search History</h2>
+    <div style="overflow-x: auto; margin-top: 1rem;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); text-align: left;">
+                    <th style="padding: 10px;">Date & Time</th>
+                    <th style="padding: 10px;">Target Location</th>
+                    <th style="padding: 10px;">SearXNG Results</th>
+                    <th style="padding: 10px;">Emails Found</th>
+                    <th style="padding: 10px;">Valid Emails</th>
+                    <th style="padding: 10px;">New Buyers Added</th>
+                    <th style="padding: 10px;">Rejected Sites</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in history %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 10px; color: #cbd5e1;">{{ h.search_time }}</td>
+                    <td style="padding: 10px; font-weight: bold; color: #38bdf8;">{{ h.state }} {{ h.country }}</td>
+                    <td style="padding: 10px;">{{ h.total_results }}</td>
+                    <td style="padding: 10px;">{{ h.emails_found }}</td>
+                    <td style="padding: 10px; color: #4ade80;">{{ h.valid_emails }}</td>
+                    <td style="padding: 10px; font-weight: bold; color: #facc15;">+{{ h.new_buyers_added }}</td>
+                    <td style="padding: 10px; color: #fca5a5;">{{ h.rejected_count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+# render.yaml - Render.com Blueprint Deployment Specification
+services:
+  - type: web
+    name: api-export-buyer-search
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app
+    plan: free
+    region: singapore
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: SEARXNG_URL
+        value: http://localhost:8080
+      - key: GOOGLE_SHEETS_SPREADSHEET_ID
+        value: 1TpqpbO9_cYFGDcFqIVidmvJR2lm5ply4ok-TFmP6H_I
+      - key: GOOGLE_SHEETS_TAB_NAME
+        value: Yash Manglani
+    disk:
+      name: sqlite-data
+      mountPath: /app/data
+      sizeGB: 1

@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Campaign Performance Report</h1>
+    <p class="subtitle">Comprehensive overview of discovery metrics, classification results, and Gmail outreach tracking.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TODAY'S EMAILS SENT  — Hero Card                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="today-hero-card" style="
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 55%, #0ea5e9 100%);
+    border-radius: 14px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 30px rgba(37,99,235,0.28);
+    color: #fff;
+">
+    <div>
+        <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.75; margin-bottom: 6px;">
+            📅 Today's Emails Sent &nbsp;·&nbsp; {{ metrics.today_str }}
+        </div>
+        <div id="today-count" style="font-size: 4rem; font-weight: 800; line-height: 1; letter-spacing: -2px;">
+            {{ metrics.today_sent_count }}
+        </div>
+        <div style="font-size: 0.88rem; opacity: 0.78; margin-top: 6px;">
+            emails successfully delivered today via Gmail
+        </div>
+    </div>
+    <div style="text-align:right;">
+        <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em;">Campaign Total</div>
+        <div style="display:flex; gap: 24px; flex-wrap: wrap; justify-content: flex-end;">
+            <div style="text-align:center;">
+                <div id="total-sent-hero" style="font-size: 2rem; font-weight: 700;">{{ metrics.sent_count }}</div>
+                <div style="font-size: 0.72rem; opacity: 0.72; text-transform: uppercase; letter-spacing: 0.06em;">Total Sent</div>
+            </div>
+            <div style="text-align:center;">
+                <div id="failed-hero" style="font-size: 2rem; font-weight: 700; color: #fca5a5;">{{ metrics.failed_count }}</div>
+                <div style="font-size: 0.72rem; opacity: 0.72; text-transform: uppercase; letter-spacing: 0.06em;">Failed</div>
+            </div>
+            <div style="text-align:center;">
+                <div id="rate-hero" style="font-size: 2rem; font-weight: 700; color: #86efac;">{{ metrics.success_rate }}%</div>
+                <div style="font-size: 0.72rem; opacity: 0.72; text-transform: uppercase; letter-spacing: 0.06em;">Success Rate</div>
+            </div>
+        </div>
+        <div style="margin-top: 12px;">
+            <!-- Success rate bar -->
+            <div style="background: rgba(255,255,255,0.2); border-radius: 999px; height: 6px; width: 220px; margin-left: auto; overflow: hidden;">
+                <div id="rate-bar" style="
+                    height: 100%;
+                    border-radius: 999px;
+                    background: #86efac;
+                    width: {{ metrics.success_rate }}%;
+                    transition: width 0.6s ease;
+                "></div>
+            </div>
+            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 4px; text-align:right;">
+                <span id="last-updated-time"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  CAMPAIGN OUTREACH SUMMARY SECTION                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="card margin-top" style="border-left: 4px solid #2563eb; margin-top: 0; margin-bottom: 2rem;">
+    <h2 style="margin-bottom: 1.25rem;">📬 Campaign Outreach Summary</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
+
+        <div style="background:#f0fdf4; border-radius:10px; padding:1rem 1.25rem; text-align:center; border:1px solid #bbf7d0;">
+            <div id="summary-today" style="font-size:2rem; font-weight:800; color:#15803d;">{{ metrics.today_sent_count }}</div>
+            <div style="font-size:0.78rem; color:#166534; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600;">Today's Sent</div>
+        </div>
+
+        <div style="background:#eff6ff; border-radius:10px; padding:1rem 1.25rem; text-align:center; border:1px solid #bfdbfe;">
+            <div id="summary-total" style="font-size:2rem; font-weight:800; color:#1d4ed8;">{{ metrics.sent_count }}</div>
+            <div style="font-size:0.78rem; color:#1e40af; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600;">Total Emails Sent</div>
+        </div>
+
+        <div style="background:#fef2f2; border-radius:10px; padding:1rem 1.25rem; text-align:center; border:1px solid #fecaca;">
+            <div id="summary-failed" style="font-size:2rem; font-weight:800; color:#b91c1c;">{{ metrics.failed_count }}</div>
+            <div style="font-size:0.78rem; color:#991b1b; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600;">Failed</div>
+        </div>
+
+        <div style="background:#fefce8; border-radius:10px; padding:1rem 1.25rem; text-align:center; border:1px solid #fde047;">
+            <div style="font-size:2rem; font-weight:800; color:#a16207;">{{ metrics.skipped_count }}</div>
+            <div style="font-size:0.78rem; color:#854d0e; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600;">Duplicates Skipped</div>
+        </div>
+
+        <div style="background:#f5f3ff; border-radius:10px; padding:1rem 1.25rem; text-align:center; border:1px solid #ddd6fe;">
+            <div id="summary-rate" style="font-size:2rem; font-weight:800; color:#6d28d9;">{{ metrics.success_rate }}%</div>
+            <div style="font-size:0.78rem; color:#5b21b6; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600;">Success Rate</div>
+        </div>
+
+    </div>
+
+    <!-- Success-rate progress bar -->
+    <div style="margin-top: 1.25rem;">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#475569; margin-bottom:6px;">
+            <span>Delivery success rate</span>
+            <span id="summary-rate-label">{{ metrics.success_rate }}%</span>
+        </div>
+        <div style="background:#e2e8f0; border-radius:999px; height:8px; overflow:hidden;">
+            <div id="summary-rate-bar" style="
+                height:100%; border-radius:999px;
+                background: linear-gradient(90deg, #22c55e, #16a34a);
+                width: {{ metrics.success_rate }}%;
+                transition: width 0.6s ease;
+            "></div>
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px; text-align: right;">
+            Source: <code>data/sent_log.csv</code> &nbsp;·&nbsp; Auto-refreshes every 30 s
+            &nbsp;·&nbsp; <span id="summary-last-updated"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  DISCOVERY & BUYER METRICS                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Metrics Overview Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ metrics.total_buyers }}</div>
+        <div class="stat-label">Total Buyers Found</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-number">{{ metrics.valid_emails }}</div>
+        <div class="stat-label">Valid Emails</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-number">{{ metrics.invalid_emails }}</div>
+        <div class="stat-label">Invalid Emails</div>
+    </div>
+    <div class="stat-card stat-info">
+        <div class="stat-number">{{ metrics.business_contacts }}</div>
+        <div class="stat-label">Business Contacts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ metrics.individual_contacts }}</div>
+        <div class="stat-label">Individual Contacts</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-number">{{ metrics.sent_count }}</div>
+        <div class="stat-label">Emails Sent</div>
+    </div>
+    <div class="stat-card stat-danger">
+        <div class="stat-number">{{ metrics.failed_count }}</div>
+        <div class="stat-label">Emails Failed</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-number">{{ metrics.skipped_count }}</div>
+        <div class="stat-label">Duplicates Skipped</div>
+    </div>
+</div>
+
+<!-- Google Sheet Sync Section -->
+<div class="card margin-top" id="sheet-sync-section" style="border-left: 4px solid #34a853;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div>
+            <h2 style="margin:0 0 6px 0;">📊 Google Sheet Sync</h2>
+            <p style="margin:0; color: var(--text-muted, #888); font-size:0.9rem;">
+                Sync <strong>all sent emails</strong> from the local log to the
+                <em>"Yash Manglani"</em> tab in your Google Sheet.
+            </p>
+        </div>
+        <button
+            id="sync-sheet-btn"
+            onclick="syncGoogleSheet()"
+            style="
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                background: linear-gradient(135deg, #34a853, #1e7e34);
+                color: #fff;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 14px rgba(52,168,83,0.35);
+                transition: opacity 0.2s, transform 0.1s;
+                white-space: nowrap;
+            "
+            onmouseover="if(!this.disabled)this.style.opacity='0.88'"
+            onmouseout="if(!this.disabled)this.style.opacity='1'"
+        >
+            <span id="sync-btn-icon">📤</span>
+            <span id="sync-btn-label">Update Google Sheet</span>
+        </button>
+    </div>
+
+    <!-- Result banner (hidden until sync runs) -->
+    <div id="sync-result-banner"
+         style="
+            display: none;
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            line-height: 1.5;
+         ">
+    </div>
+
+    <!-- Detail list for partial failures (hidden by default) -->
+    <div id="sync-error-detail" style="display:none; margin-top:10px;">
+        <details>
+            <summary style="cursor:pointer; color:#888; font-size:0.85rem;">
+                Show error details
+            </summary>
+            <ul id="sync-error-list" style="margin-top:8px; font-size:0.82rem; color:#c0392b;"></ul>
+        </details>
+    </div>
+</div>
+
+<!-- Campaign Log Table -->
+<div class="card margin-top">
+    <h2>📜 Sent Campaign Logs (<code>data/sent_log.csv</code>)</h2>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Recipient Email</th>
+                    <th>Company Name</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sent_logs %}
+                    {% for log in sent_logs %}
+                    <tr>
+                        <td><small>{{ log.sent_date }}</small></td>
+                        <td><code>{{ log.email }}</code></td>
+                        <td><strong>{{ log.company_name }}</strong></td>
+                        <td>{{ log.subject }}</td>
+                        <td>
+                            {% if log.status == 'Sent' %}
+                                <span class="badge badge-success">Sent</span>
+                            {% elif log.status == 'Skipped' %}
+                                <span class="badge badge-warning">Skipped</span>
+                            {% else %}
+                                <span class="badge badge-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ log.notes }}</small></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No campaign emails sent yet. Select buyers from the Buyer List and send outreach!</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+/**
+ * ── Live counter: polls /today_sent every 30 s ───────────────────────────
+ * Also called immediately after an outreach send completes (window event).
+ */
+function updateTodayCounter() {
+    fetch('/today_sent')
+        .then(r => r.json())
+        .then(data => {
+            // Hero card
+            document.getElementById('today-count').textContent        = data.today_sent;
+            document.getElementById('total-sent-hero').textContent    = data.total_sent;
+            document.getElementById('failed-hero').textContent        = data.failed;
+            document.getElementById('rate-hero').textContent          = data.success_rate + '%';
+            document.getElementById('rate-bar').style.width           = data.success_rate + '%';
+
+            // Summary section
+            document.getElementById('summary-today').textContent      = data.today_sent;
+            document.getElementById('summary-total').textContent      = data.total_sent;
+            document.getElementById('summary-failed').textContent     = data.failed;
+            document.getElementById('summary-rate').textContent       = data.success_rate + '%';
+            document.getElementById('summary-rate-bar').style.width   = data.success_rate + '%';
+            document.getElementById('summary-rate-label').textContent = data.success_rate + '%';
+
+            // Timestamp
+            const now = new Date().toLocaleTimeString();
+            const ts  = 'Updated ' + now;
+            document.getElementById('last-updated-time').textContent    = ts;
+            document.getElementById('summary-last-updated').textContent = ts;
+        })
+        .catch(() => { /* silently ignore network errors */ });
+}
+
+// Kick off the first update and then poll every 30 seconds
+updateTodayCounter();
+setInterval(updateTodayCounter, 30000);
+
+// ── Listen for the outreach-send custom event ─────────────────────────────
+// The send-outreach form posts to /send_outreach and redirects back.
+// We detect navigation back to this page and immediately refresh the counter.
+window.addEventListener('pageshow', function(evt) {
+    // pageshow fires on back/forward navigation (evt.persisted = true)
+    // and on normal page load — always refresh the counter.
+    updateTodayCounter();
+});
+
+/**
+ * ── Google Sheet sync ─────────────────────────────────────────────────────
+ */
+async function syncGoogleSheet() {
+    const btn       = document.getElementById('sync-sheet-btn');
+    const btnIcon   = document.getElementById('sync-btn-icon');
+    const btnLabel  = document.getElementById('sync-btn-label');
+    const banner    = document.getElementById('sync-result-banner');
+    const errDetail = document.getElementById('sync-error-detail');
+    const errList   = document.getElementById('sync-error-list');
+
+    // ── Loading state ─────────────────────────────────────────────────────
+    btn.disabled = true;
+    btn.style.opacity = '0.65';
+    btn.style.cursor  = 'not-allowed';
+    btnIcon.textContent  = '⏳';
+    btnLabel.textContent = 'Updating Google Sheet...';
+    banner.style.display = 'none';
+    errDetail.style.display = 'none';
+    errList.innerHTML = '';
+
+    try {
+        const resp = await fetch('/sync_sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        let data;
+        try {
+            data = await resp.json();
+        } catch {
+            throw new Error('Server returned an invalid response. Check application logs.');
+        }
+
+        // ── Show result banner ────────────────────────────────────────────
+        banner.style.display = 'block';
+
+        if (data.success) {
+            banner.style.background = '#e8f5e9';
+            banner.style.border     = '1px solid #a5d6a7';
+            banner.style.color      = '#1b5e20';
+            banner.innerHTML = `✅ <strong>${data.message}</strong>`;
+            btnIcon.textContent  = '✅';
+            btnLabel.textContent = 'Update Google Sheet';
+        } else if (data.synced > 0) {
+            banner.style.background = '#fff8e1';
+            banner.style.border     = '1px solid #ffe082';
+            banner.style.color      = '#795548';
+            banner.innerHTML = `⚠️ <strong>${data.message}</strong>`;
+            btnIcon.textContent  = '⚠️';
+            btnLabel.textContent = 'Update Google Sheet';
+        } else {
+            banner.style.background = '#fdecea';
+            banner.style.border     = '1px solid #ef9a9a';
+            banner.style.color      = '#b71c1c';
+            banner.innerHTML = `❌ <strong>${data.message}</strong>`;
+            btnIcon.textContent  = '❌';
+            btnLabel.textContent = 'Update Google Sheet';
+        }
+
+        if (data.synced !== undefined) {
+            banner.innerHTML += `
+                <br><small style="opacity:0.8;">
+                    Synced: <strong>${data.synced}</strong> &nbsp;|&nbsp;
+                    Failed: <strong>${data.failed}</strong> &nbsp;|&nbsp;
+                    Skipped (no email): <strong>${data.skipped}</strong>
+                </small>`;
+        }
+
+        if (data.errors && data.errors.length > 0) {
+            errDetail.style.display = 'block';
+            data.errors.forEach(err => {
+                const li = document.createElement('li');
+                li.textContent = err;
+                errList.appendChild(li);
+            });
+        }
+
+    } catch (err) {
+        banner.style.display    = 'block';
+        banner.style.background = '#fdecea';
+        banner.style.border     = '1px solid #ef9a9a';
+        banner.style.color      = '#b71c1c';
+        banner.innerHTML = `❌ <strong>Request failed:</strong> ${err.message}`;
+        btnIcon.textContent  = '❌';
+        btnLabel.textContent = 'Update Google Sheet';
+    } finally {
+        btn.disabled      = false;
+        btn.style.opacity = '1';
+        btn.style.cursor  = 'pointer';
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: buyer_search_app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_SECRET_KEY=8cc873df6570717869b5e60c22e7f28cc61a82db607201e8a54e1eabb978baef
+      - SEARXNG_URL=http://searxng:8080
+      - GMAIL_EMAIL=${GMAIL_EMAIL}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - GOOGLE_SERVICE_ACCOUNT_JSON=${GOOGLE_SERVICE_ACCOUNT_JSON}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - searxng
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng_engine
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - INSTANCE_NAME=SearXNG-BuyerSearch
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID

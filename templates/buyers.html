@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header flex-between">
+    <div>
+        <h1>Discovered Buyer Directory</h1>
+        <p class="subtitle">Internal storage: <code>data/buyers.csv</code> (Total Leads: {{ buyers|length }})</p>
+    </div>
+    <div class="action-buttons">
+        <form action="{{ url_for('classify') }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-secondary">
+                🤖 Classify with Gemini AI
+            </button>
+        </form>
+    </div>
+</div>
+
+<form action="{{ url_for('send_outreach') }}" method="POST" id="outreachForm">
+    <div class="card outreach-bar">
+        <h3>✉️ Gmail Outreach Control</h3>
+        <div class="form-row">
+            <div class="form-group flex-2">
+                <input type="text" name="subject" placeholder="Subject line" value="Export Partnership Proposal - Premium Singing Bowls Supplier" required>
+            </div>
+            <div class="form-group flex-1">
+                <button type="submit" class="btn btn-primary">
+                    📤 Send Outreach to Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card margin-top" style="padding: 1rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <strong style="font-size: 0.9rem;">Filter Source:</strong>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;" onclick="filterSource('all')">All</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #059669;" onclick="filterSource('Tavily')">Tavily</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #0d9488;" onclick="filterSource('SearXNG')">SearXNG</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #d97706;" onclick="filterSource('Volza')">Volza</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #7c3aed;" onclick="filterSource('Trademo')">Trademo</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #ea4335;" onclick="filterSource('Google')">Google</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #1877f2;" onclick="filterSource('Facebook')">Facebook</button>
+            <button type="button" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #0a66c2;" onclick="filterSource('LinkedIn')">LinkedIn</button>
+        </div>
+        <div>
+            <input type="text" id="tableSearch" placeholder="🔍 Search leads by name, email, country..." style="padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem; width: 260px;" onkeyup="searchTable()">
+        </div>
+    </div>
+
+    <div class="table-container card">
+        <table class="data-table" id="buyersTable">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                    <th>Buyer / Company Name</th>
+                    <th>Email Address</th>
+                    <th>Phone</th>
+                    <th>Website</th>
+                    <th>Country</th>
+                    <th>Category</th>
+                    <th>Source</th>
+                    <th>Validation</th>
+                    <th>Classification</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if buyers %}
+                    {% for buyer in buyers %}
+                    <tr class="buyer-row" data-source="{{ buyer.source_platform }}">
+                        <td>
+                            {% if buyer.email and buyer.validation_status == 'Valid Format' %}
+                                <input type="checkbox" name="selected_emails" value="{{ buyer.email }}" class="buyer-checkbox">
+                            {% else %}
+                                <input type="checkbox" disabled title="No valid email">
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ buyer.company_name }}</strong>
+                            {% if buyer.buyer_name != buyer.company_name %}
+                                <br><small class="text-muted">{{ buyer.buyer_name }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.email %}
+                                <code>{{ buyer.email }}</code>
+                            {% else %}
+                                <span class="text-muted">Not Found</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.phone %}
+                                <small>📞 {{ buyer.phone }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.website %}
+                                <a href="{{ buyer.website }}" target="_blank" class="link">Visit Site ↗</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ buyer.country }}</td>
+                        <td><small>{{ buyer.business_category }}</small></td>
+                        <td>
+                            {% if 'Tavily' in buyer.source_platform %}
+                                <span class="badge badge-tavily">Tavily</span>
+                            {% elif 'SearXNG' in buyer.source_platform %}
+                                <span class="badge badge-searxng">SearXNG</span>
+                            {% elif 'Volza' in buyer.source_platform %}
+                                <span class="badge badge-volza">Volza</span>
+                            {% elif 'Trademo' in buyer.source_platform %}
+                                <span class="badge badge-trademo">Trademo</span>
+                            {% elif 'Google' in buyer.source_platform %}
+                                <span class="badge badge-google">Google</span>
+                            {% elif 'Facebook' in buyer.source_platform %}
+                                <span class="badge badge-facebook">Facebook</span>
+                            {% elif 'LinkedIn' in buyer.source_platform %}
+                                <span class="badge badge-linkedin">LinkedIn</span>
+                            {% else %}
+                                <span class="badge badge-source">{{ buyer.source_platform }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.validation_status == 'Valid Format' %}
+                                <span class="badge badge-success">Valid Format</span>
+                            {% else %}
+                                <span class="badge badge-danger">Invalid / Missing</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.classification == 'Business' %}
+                                <span class="badge badge-business">🏢 Business</span>
+                            {% elif buyer.classification == 'Individual' %}
+                                <span class="badge badge-individual">👤 Individual</span>
+                            {% else %}
+                                <span class="badge badge-neutral">Unclassified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buyer.already_sent %}
+                                <span class="badge badge-info">Contacted</span>
+                            {% else %}
+                                <span class="badge badge-neutral">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center">No buyers found yet. Launch a search on the home page!</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<script>
+function toggleSelectAll(master) {
+    const checkboxes = document.querySelectorAll('.buyer-checkbox');
+    checkboxes.forEach(cb => cb.checked = master.checked);
+}
+
+function filterSource(source) {
+    const rows = document.querySelectorAll('.buyer-row');
+    rows.forEach(row => {
+        const rowSource = row.getAttribute('data-source') || '';
+        if (source === 'all' || rowSource.includes(source)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function searchTable() {
+    const input = document.getElementById('tableSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.buyer-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        if (text.includes(input)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
