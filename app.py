@@ -119,6 +119,7 @@ def worker_status_api():
 @app.route('/api/worker/trigger', methods=['POST'])
 def trigger_worker_api():
     """Triggers an immediate background buyer discovery search."""
+    is_json = request.is_json or 'application/json' in request.headers.get('Accept', '')
     data = request.get_json(silent=True) or request.form
     state = data.get('state', 'California').strip()
     try:
@@ -127,15 +128,22 @@ def trigger_worker_api():
         limit = 10
         
     trigger_manual_discovery(state=state, limit=limit)
+    
+    msg = f"⚡ Background buyer search started for state '{state}'!"
+    if not is_json:
+        flash(msg, "success")
+        return redirect(url_for('index'))
+        
     return jsonify({
         "status": "triggered",
-        "message": f"Background search started for state '{state}'",
+        "message": msg,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
 @app.route('/api/worker/config', methods=['POST'])
 def worker_config_api():
     """Configures the background worker interval in hours."""
+    is_json = request.is_json or 'application/json' in request.headers.get('Accept', '')
     data = request.get_json(silent=True) or request.form
     try:
         hours = int(data.get('interval_hours', 6))
@@ -145,10 +153,16 @@ def worker_config_api():
         hours = 6
         
     set_search_interval(hours)
+    msg = f"Background worker rescheduled for every {hours} hour(s)."
+    
+    if not is_json:
+        flash(msg, "info")
+        return redirect(url_for('index'))
+        
     return jsonify({
         "status": "updated",
         "interval_hours": hours,
-        "message": f"Background worker rescheduled for every {hours} hour(s)."
+        "message": msg
     })
 
 
